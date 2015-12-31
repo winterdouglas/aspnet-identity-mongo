@@ -1,54 +1,194 @@
-﻿namespace AspNet.Identity.MongoDB
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using MongoDB.Driver;
+using Microsoft.AspNet.Identity;
+
+namespace AspNet.Identity.MongoDB
 {
-	using System.Threading.Tasks;
-	using global::MongoDB.Driver;
-	using Microsoft.AspNet.Identity;
+    public class RoleStore<TRole> : RoleStore<TRole, IdentityContextBase>
+        where TRole : IdentityRole
+    {
+        public RoleStore(IdentityContextBase context, IdentityErrorDescriber describer = null) : base(context, describer) { }
+    }
 
-	/// todo when the new LINQ implementation arrives in the 2.1 driver we can add back IQueryableRoleStore and IQueryableUserStore: https://jira.mongodb.org/browse/CSHARP-935
-	/// <summary>
-	///     Note: Deleting and updating do not modify the roles stored on a user document. If you desire this dynamic
-	///     capability, override the appropriate operations on RoleStore as desired for your application. For example you could
-	///     perform a document modification on the users collection before a delete or a rename.
-	/// </summary>
-	/// <typeparam name="TRole"></typeparam>
-	public class RoleStore<TRole> : IRoleStore<TRole>
-		where TRole : IdentityRole
-	{
-		private readonly IMongoCollection<TRole> _Roles;
+    public class RoleStore<TRole, TContext> :
+        IQueryableRoleStore<TRole>,
+        IRoleClaimStore<TRole>
+        where TRole : IdentityRole
+        where TContext : IdentityContextBase
+    {
+        public RoleStore(TContext context, IdentityErrorDescriber describer = null)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+            Context = context;
+            ErrorDescriber = describer ?? new IdentityErrorDescriber();
+        }
 
-		public RoleStore(IMongoCollection<TRole> roles)
-		{
-			_Roles = roles;
-		}
+        public IQueryable<TRole> Roles
+        {
+            get
+            {
+                return Context.GetRoles<TRole>().AsQueryable();
+            }
+        }
 
-		public virtual void Dispose()
-		{
-			// no need to dispose of anything, mongodb handles connection pooling automatically
-		}
+        public TContext Context { get; private set; }
 
-		public virtual Task CreateAsync(TRole role)
-		{
-			return _Roles.InsertOneAsync(role);
-		}
+        public IdentityErrorDescriber ErrorDescriber { get; set; }
 
-		public virtual Task UpdateAsync(TRole role)
-		{
-			return _Roles.ReplaceOneAsync(r => r.Id == role.Id, role);
-		}
+        public virtual async Task<IdentityResult> CreateAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            await Context.GetRoles<TRole>().InsertOneAsync(role);
+            return IdentityResult.Success;
+        }
 
-		public virtual Task DeleteAsync(TRole role)
-		{
-			return _Roles.DeleteOneAsync(r => r.Id == role.Id);
-		}
+        public virtual async Task<IdentityResult> UpdateAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            await Context.GetRoles<TRole>().ReplaceOneAsync(r => r.Id == role.Id, role);
+            return IdentityResult.Success;
+        }
 
-		public virtual Task<TRole> FindByIdAsync(string roleId)
-		{
-			return _Roles.Find(r => r.Id == roleId).FirstOrDefaultAsync();
-		}
+        public virtual async Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            await Context.GetRoles<TRole>().DeleteOneAsync(r => r.Id == role.Id);
+            return IdentityResult.Success;
+        }
 
-		public virtual Task<TRole> FindByNameAsync(string roleName)
-		{
-			return _Roles.Find(r => r.Name == roleName).FirstOrDefaultAsync();
-		}
-	}
+        public virtual Task<TRole> FindByIdAsync(string roleId, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Context.GetRoles<TRole>().Find(r => r.Id == roleId).FirstOrDefaultAsync();
+        }
+
+        public virtual Task<TRole> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Context.GetRoles<TRole>().Find(r => r.Name == normalizedRoleName).FirstOrDefaultAsync();
+        }
+
+        public virtual Task<string> GetNormalizedRoleNameAsync(TRole role, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            return Task.FromResult(role.NormalizedName);
+        }
+
+        public virtual Task SetNormalizedRoleNameAsync(TRole role, string normalizedName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            role.NormalizedName = normalizedName;
+            return Task.FromResult(0);
+        }
+
+        public virtual Task<string> GetRoleIdAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            return Task.FromResult(role.Id);
+        }
+
+        public virtual Task<string> GetRoleNameAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            return Task.FromResult(role.Name);
+        }
+
+        public virtual Task SetRoleNameAsync(TRole role, string roleName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            role.Name = roleName;
+            return Task.FromResult(0);
+        }
+
+        public Task<IList<Claim>> GetClaimsAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            return Task.FromResult((IList<Claim>)role.Claims.Select(c => new Claim(c.Type, c.Value)).ToList());
+        }
+
+        public Task AddClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            if (claim == null)
+            {
+                throw new ArgumentNullException(nameof(claim));
+            }
+            //role.AddClaim(claim);
+            role.Claims.Add(new IdentityRoleClaim(claim.Type, claim.Value));
+            return Task.FromResult(0);
+        }
+
+        public Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            if (claim == null)
+            {
+                throw new ArgumentNullException(nameof(claim));
+            }
+            //role.RemoveClaim(claim);
+            var claimsToRemove = role.Claims
+                .Where(c => c.Type == claim.Type)
+                .Where(c => c.Value == claim.Value);
+
+            role.Claims = role.Claims.Except(claimsToRemove).ToList();
+            return Task.FromResult(0);
+        }
+
+        public virtual void Dispose()
+        {
+            // no need to dispose of anything, mongodb handles connection pooling automatically
+        }
+    }
 }

@@ -1,7 +1,7 @@
-﻿namespace Tests
-{
-	using ReflectionMagic;
+﻿using ReflectionMagic;
 
+namespace AspNet.Identity.MongoDB.Tests
+{
 	public static class UserHelpers
 	{
 		public static void SetId(this object instance, object value)

@@ -1,24 +1,51 @@
-﻿namespace AspNet.Identity.MongoDB
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+
+namespace AspNet.Identity.MongoDB
 {
-	using global::MongoDB.Bson;
-	using global::MongoDB.Bson.Serialization.Attributes;
-	using Microsoft.AspNet.Identity;
+    public class IdentityRole
+    {
+        public IdentityRole()
+        {
+            Id = ObjectId.GenerateNewId().ToString();
+        }
 
-	public class IdentityRole : IRole<string>
-	{
-		public IdentityRole()
-		{
-			Id = ObjectId.GenerateNewId().ToString();
-		}
+        public IdentityRole(string roleName)
+            : this()
+        {
+            Name = roleName;
+        }
 
-		public IdentityRole(string roleName) : this()
-		{
-			Name = roleName;
-		}
+        [BsonRepresentation(BsonType.ObjectId)]
+        public virtual string Id { get; private set; }
 
-		[BsonRepresentation(BsonType.ObjectId)]
-		public string Id { get; private set; }
+        public virtual string Name { get; set; }
 
-		public string Name { get; set; }
-	}
+        public virtual string NormalizedName { get; set; }
+
+        [BsonIgnoreIfNull]
+        public virtual ICollection<IdentityRoleClaim> Claims { get; set; } = new List<IdentityRoleClaim>();
+
+        //public virtual void AddClaim(Claim claim)
+        //{
+        //    Claims.Add(new IdentityRoleClaim(claim.Type, claim.Value));
+        //}
+
+        //public virtual void RemoveClaim(Claim claim)
+        //{
+        //    var claimsToRemove = Claims
+        //        .Where(c => c.Type == claim.Type)
+        //        .Where(c => c.Value == claim.Value);
+
+        //    Claims = Claims.Except(claimsToRemove).ToList();
+        //}
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
 }

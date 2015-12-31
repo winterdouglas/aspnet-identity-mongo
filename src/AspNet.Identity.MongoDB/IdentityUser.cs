@@ -1,99 +1,113 @@
-﻿namespace AspNet.Identity.MongoDB
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System;
+using System.Collections.Generic;
+
+namespace AspNet.Identity.MongoDB
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Security.Claims;
-	using global::MongoDB.Bson;
-	using global::MongoDB.Bson.Serialization.Attributes;
-	using Microsoft.AspNet.Identity;
+    public class IdentityUser
+    {
+        public IdentityUser()
+        {
+            Id = ObjectId.GenerateNewId().ToString();
+        }
 
-	public class IdentityUser : IUser<string>
-	{
-		public IdentityUser()
-		{
-			Id = ObjectId.GenerateNewId().ToString();
-			Roles = new List<string>();
-			Logins = new List<UserLoginInfo>();
-			Claims = new List<IdentityUserClaim>();
-		}
+        public IdentityUser(string userName)
+            : this()
+        {
+            UserName = userName;
+        }
 
-		[BsonRepresentation(BsonType.ObjectId)]
-		public string Id { get; private set; }
+        [BsonRepresentation(BsonType.ObjectId)]
+        public virtual string Id { get; private set; }
 
-		public string UserName { get; set; }
+        public virtual string UserName { get; set; }
 
-		public virtual string SecurityStamp { get; set; }
+        public virtual string NormalizedUserName { get; set; }
 
-		public virtual string Email { get; set; }
+        public virtual string Email { get; set; }
 
-		public virtual bool EmailConfirmed { get; set; }
+        public virtual string NormalizedEmail { get; set; }
 
-		public virtual string PhoneNumber { get; set; }
+        public virtual bool EmailConfirmed { get; set; }
 
-		public virtual bool PhoneNumberConfirmed { get; set; }
+        [BsonIgnoreIfNull]
+        public virtual string PasswordHash { get; set; }
 
-		public virtual bool TwoFactorEnabled { get; set; }
+        public virtual string SecurityStamp { get; set; }
 
-		public virtual DateTime? LockoutEndDateUtc { get; set; }
+        public virtual string PhoneNumber { get; set; }
 
-		public virtual bool LockoutEnabled { get; set; }
+        public virtual bool PhoneNumberConfirmed { get; set; }
 
-		public virtual int AccessFailedCount { get; set; }
+        public virtual bool TwoFactorEnabled { get; set; }
 
-		[BsonIgnoreIfNull]
-		public List<string> Roles { get; set; }
+        public virtual DateTime? LockoutEndDateUtc { get; set; }
 
-		public virtual void AddRole(string role)
-		{
-			Roles.Add(role);
-		}
+        public virtual bool LockoutEnabled { get; set; }
 
-		public virtual void RemoveRole(string role)
-		{
-			Roles.Remove(role);
-		}
+        public virtual int AccessFailedCount { get; set; }
 
-		[BsonIgnoreIfNull]
-		public virtual string PasswordHash { get; set; }
+        [BsonIgnoreIfNull]
+        public virtual ICollection<string> Roles { get; set; } = new List<string>();
 
-		[BsonIgnoreIfNull]
-		public List<UserLoginInfo> Logins { get; set; }
+        [BsonIgnoreIfNull]
+        public virtual ICollection<IdentityUserClaim> Claims { get; set; } = new List<IdentityUserClaim>();
 
-		public virtual void AddLogin(UserLoginInfo login)
-		{
-			Logins.Add(login);
-		}
+        [BsonIgnoreIfNull]
+        public virtual ICollection<IdentityUserLogin> Logins { get; set; } = new List<IdentityUserLogin>();
 
-		public virtual void RemoveLogin(UserLoginInfo login)
-		{
-			var loginsToRemove = Logins
-				.Where(l => l.LoginProvider == login.LoginProvider)
-				.Where(l => l.ProviderKey == login.ProviderKey);
+        //public virtual void AddRole(string role)
+        //{
+        //    Roles.Add(role);
+        //}
 
-			Logins = Logins.Except(loginsToRemove).ToList();
-		}
+        //public virtual void RemoveRole(string role)
+        //{
+        //    Roles.Remove(role);
+        //}
 
-		public virtual bool HasPassword()
-		{
-			return false;
-		}
+        //public virtual void AddClaim(Claim claim)
+        //{
+        //    Claims.Add(new IdentityUserClaim(claim.Type, claim.Value));
+        //}
 
-		[BsonIgnoreIfNull]
-		public List<IdentityUserClaim> Claims { get; set; }
+        //public virtual void RemoveClaim(Claim claim)
+        //{
+        //    var claimsToRemove = Claims
+        //        .Where(c => c.Type == claim.Type)
+        //        .Where(c => c.Value == claim.Value);
 
-		public virtual void AddClaim(Claim claim)
-		{
-			Claims.Add(new IdentityUserClaim(claim));
-		}
+        //    Claims = Claims.Except(claimsToRemove).ToList();
+        //}
 
-		public virtual void RemoveClaim(Claim claim)
-		{
-			var claimsToRemove = Claims
-				.Where(c => c.Type == claim.Type)
-				.Where(c => c.Value == claim.Value);
+        //public virtual void ReplaceClaim(Claim claim, Claim newClaim)
+        //{
+        //    var matchedClaims = Claims.Where(uc => uc.Value == claim.Value && uc.Type == claim.Type);
+        //    foreach (var matchedClaim in matchedClaims)
+        //    {
+        //        matchedClaim.Value = newClaim.Value;
+        //        matchedClaim.Type = newClaim.Type;
+        //    }
+        //}
 
-			Claims = Claims.Except(claimsToRemove).ToList();
-		}
-	}
+        //public virtual void AddLogin(IdentityUserLogin login)
+        //{
+        //    Logins.Add(login);
+        //}
+
+        //public virtual void RemoveLogin(IdentityUserLogin login)
+        //{
+        //    var loginsToRemove = Logins
+        //        .Where(l => l.LoginProvider == login.LoginProvider)
+        //        .Where(l => l.ProviderKey == login.ProviderKey);
+
+        //    Logins = Logins.Except(loginsToRemove).ToList();
+        //}
+
+        public override string ToString()
+        {
+            return UserName;
+        }
+    }
 }

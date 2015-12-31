@@ -1,7 +1,7 @@
-﻿namespace AspNet.Identity.MongoDB
-{
-	using global::MongoDB.Driver;
+﻿using MongoDB.Driver;
 
+namespace AspNet.Identity.MongoDB
+{
 	public class IndexChecks
 	{
 		public static void EnsureUniqueIndexOnUserName<TUser>(IMongoCollection<TUser> users)

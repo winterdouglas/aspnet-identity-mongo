@@ -1,8 +1,8 @@
-﻿namespace Tests
-{
-	using MongoDB.Bson;
+﻿using MongoDB.Bson;
 
-	public static class ObjectIdHelpers
+namespace AspNet.Identity.MongoDB.Tests
+{
+    public static class ObjectIdHelpers
 	{
 		public static ObjectId? SafeParseObjectId(this string id)
 		{

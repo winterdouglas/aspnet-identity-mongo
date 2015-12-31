@@ -1,0 +1,20 @@
+{
+    "version": "1.0.0-*",
+    "description": "ASP.NET Identity Providers for MongoDB 2.1.1",
+    "authors": [ "a.winterdoug@gmail.com" ],
+    "projectUrl": "",
+    "licenseUrl": "",
+    "dependencies": {
+        "Microsoft.AspNet.Identity": "3.0.0-*",
+        "Microsoft.Extensions.DependencyInjection": "1.0.0-rc1-final",
+        "MongoDB.Driver": "2.1.1"
+    },
+    "frameworks": {
+        "net451": {
+            "frameworkAssemblies": {
+                "System.Runtime": "",
+                "System.Threading.Tasks": ""
+            }
+        }
+    }
+}

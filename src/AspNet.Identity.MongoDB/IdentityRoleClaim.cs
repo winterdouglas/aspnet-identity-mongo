@@ -1,14 +1,12 @@
 ﻿namespace AspNet.Identity.MongoDB
 {
-	using System.Security.Claims;
-
-	public class IdentityUserClaim
+    public class IdentityRoleClaim
 	{
-		public IdentityUserClaim()
+		public IdentityRoleClaim()
 		{
 		}
 
-		public IdentityUserClaim(string type, string value)
+		public IdentityRoleClaim(string type, string value)
 		{
 			Type = type;
 			Value = value;
