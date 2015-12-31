@@ -1,9 +1,11 @@
 AspNet.Identity.Mongo
 =====================
 
-A mongodb provider for the new ASP.NET Identity framework.
+A mongodb provider for the ASP.NET Identity framework 3.
 
 ## Usage
+
+**WARNING** - This project is not fully functional yet. Integration tests are being updated to use xUnit. Not all functionality is guaranteed to work for now. Use at your own risk.
 
 This provider is based on default identity provider for Entity Framework
 
