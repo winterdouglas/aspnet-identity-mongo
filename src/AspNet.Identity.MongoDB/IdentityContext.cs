@@ -1,5 +1,4 @@
 ﻿using MongoDB.Driver;
-using System.Linq;
 
 namespace AspNet.Identity.MongoDB
 {
@@ -29,39 +28,27 @@ namespace AspNet.Identity.MongoDB
         {
         }
 
-        public IMongoCollection<TUser> Users
-        {
-            get
-            {
-                return GetUsers<TUser>();
-            }
-        }
+        public virtual IMongoCollection<TUser> Users => GetUsers<TUser>();
 
-        public IMongoCollection<TRole> Roles
-        {
-            get
-            {
-                return GetRoles<TRole>();
-            }
-        }
+        public virtual IMongoCollection<TRole> Roles => GetRoles<TRole>();
     }
 
     public abstract class IdentityContextBase
     {
-        protected readonly string _userCollectionName = "users";
-        protected readonly string _roleCollectionName = "roles";
+        private readonly string _userCollectionName = "users";
+        private readonly string _roleCollectionName = "roles";
 
-        protected virtual IMongoClient Client { get; }
-        protected virtual IMongoDatabase Database { get; }
+        protected IMongoClient Client { get; }
+        protected IMongoDatabase Database { get; }
 
-        public IdentityContextBase(string connectionString, string databaseName, string userCollectionName, string roleCollectionName)
+        protected IdentityContextBase(string connectionString, string databaseName, string userCollectionName, string roleCollectionName)
             : this(connectionString, databaseName)
         {
             _userCollectionName = userCollectionName;
             _roleCollectionName = roleCollectionName;
         }
 
-        public IdentityContextBase(string connectionString, string databaseName)
+        protected IdentityContextBase(string connectionString, string databaseName)
         {
             Client = new MongoClient(connectionString);
             Database = Client.GetDatabase(databaseName);

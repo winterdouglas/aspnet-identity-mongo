@@ -31,15 +31,9 @@ namespace AspNet.Identity.MongoDB
             ErrorDescriber = describer ?? new IdentityErrorDescriber();
         }
 
-        public IQueryable<TRole> Roles
-        {
-            get
-            {
-                return Context.GetRoles<TRole>().AsQueryable();
-            }
-        }
+        public IQueryable<TRole> Roles => Context.GetRoles<TRole>().AsQueryable();
 
-        public TContext Context { get; private set; }
+        public TContext Context { get; }
 
         public IdentityErrorDescriber ErrorDescriber { get; set; }
 
@@ -50,7 +44,7 @@ namespace AspNet.Identity.MongoDB
             {
                 throw new ArgumentNullException(nameof(role));
             }
-            await Context.GetRoles<TRole>().InsertOneAsync(role);
+            await Context.GetRoles<TRole>().InsertOneAsync(role, cancellationToken);
             return IdentityResult.Success;
         }
 
@@ -61,7 +55,7 @@ namespace AspNet.Identity.MongoDB
             {
                 throw new ArgumentNullException(nameof(role));
             }
-            await Context.GetRoles<TRole>().ReplaceOneAsync(r => r.Id == role.Id, role);
+            await Context.GetRoles<TRole>().ReplaceOneAsync(r => r.Id == role.Id, role, cancellationToken: cancellationToken);
             return IdentityResult.Success;
         }
 
@@ -72,20 +66,20 @@ namespace AspNet.Identity.MongoDB
             {
                 throw new ArgumentNullException(nameof(role));
             }
-            await Context.GetRoles<TRole>().DeleteOneAsync(r => r.Id == role.Id);
+            await Context.GetRoles<TRole>().DeleteOneAsync(r => r.Id == role.Id, cancellationToken);
             return IdentityResult.Success;
         }
 
         public virtual Task<TRole> FindByIdAsync(string roleId, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Context.GetRoles<TRole>().Find(r => r.Id == roleId).FirstOrDefaultAsync();
+            return Context.GetRoles<TRole>().Find(r => r.Id == roleId).FirstOrDefaultAsync(cancellationToken);
         }
 
         public virtual Task<TRole> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Context.GetRoles<TRole>().Find(r => r.Name == normalizedRoleName).FirstOrDefaultAsync();
+            return Context.GetRoles<TRole>().Find(r => r.NormalizedName == normalizedRoleName).FirstOrDefaultAsync(cancellationToken);
         }
 
         public virtual Task<string> GetNormalizedRoleNameAsync(TRole role, CancellationToken cancellationToken)

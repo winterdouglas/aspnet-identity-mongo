@@ -59,8 +59,7 @@ namespace AspNet.Identity.MongoDB.Tests
         public void Create_NullClaims_DoesNotSerializeClaims()
         {
             // serialized nulls can cause havoc in deserialization, overwriting the constructor's initial empty list 
-            var user = new IdentityUser();
-            user.Claims = null;
+            var user = new IdentityUser { Claims = null };
 
             var document = user.ToBsonDocument();
 

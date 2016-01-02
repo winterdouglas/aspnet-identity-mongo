@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace AspNet.Identity.MongoDB
+﻿namespace AspNet.Identity.MongoDB
 {
     public class IdentityUserLogin
     {

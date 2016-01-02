@@ -16,11 +16,8 @@ namespace AspNet.Identity.MongoDB
 
         private static IServiceCollection GetDefaultServices(Type userType, Type roleType, Type contextType)
         {
-            Type userStoreType;
-            Type roleStoreType;
-
-            userStoreType = typeof(UserStore<,>).MakeGenericType(userType, contextType);
-            roleStoreType = typeof(RoleStore<,>).MakeGenericType(roleType, contextType);
+            var userStoreType = typeof(UserStore<,>).MakeGenericType(userType, contextType);
+            var roleStoreType = typeof(RoleStore<,>).MakeGenericType(roleType, contextType);
 
             var services = new ServiceCollection();
             services.AddScoped(

@@ -19,9 +19,9 @@ namespace AspNet.Identity.MongoDB
         }
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public virtual string Id { get; private set; }
+        public string Id { get; private set; }
 
-        public virtual string UserName { get; set; }
+        public string UserName { get; set; }
 
         public virtual string NormalizedUserName { get; set; }
 

@@ -1,8 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
 
 namespace AspNet.Identity.MongoDB
 {
@@ -20,9 +18,9 @@ namespace AspNet.Identity.MongoDB
         }
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public virtual string Id { get; private set; }
+        public string Id { get; private set; }
 
-        public virtual string Name { get; set; }
+        public string Name { get; set; }
 
         public virtual string NormalizedName { get; set; }
 

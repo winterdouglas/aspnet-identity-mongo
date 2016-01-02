@@ -44,15 +44,9 @@ namespace AspNet.Identity.MongoDB
             ErrorDescriber = describer ?? new IdentityErrorDescriber();
         }
 
-        public IQueryable<TUser> Users
-        {
-            get
-            {
-                return Context.GetUsers<TUser>().AsQueryable();
-            }
-        }
+        public IQueryable<TUser> Users => Context.GetUsers<TUser>().AsQueryable();
 
-        public TContext Context { get; private set; }
+        public TContext Context { get; }
 
         public IdentityErrorDescriber ErrorDescriber { get; set; }
 
@@ -115,7 +109,7 @@ namespace AspNet.Identity.MongoDB
             {
                 throw new ArgumentNullException(nameof(user));
             }
-            await Context.GetUsers<TUser>().InsertOneAsync(user);
+            await Context.GetUsers<TUser>().InsertOneAsync(user, cancellationToken);
             return IdentityResult.Success;
         }
 
@@ -127,7 +121,7 @@ namespace AspNet.Identity.MongoDB
                 throw new ArgumentNullException(nameof(user));
             }
             // todo should add an optimistic concurrency check
-            await Context.GetUsers<TUser>().ReplaceOneAsync(u => u.Id == user.Id, user);
+            await Context.GetUsers<TUser>().ReplaceOneAsync(u => u.Id == user.Id, user, cancellationToken: cancellationToken);
             return IdentityResult.Success;
         }
 
@@ -138,21 +132,21 @@ namespace AspNet.Identity.MongoDB
             {
                 throw new ArgumentNullException(nameof(user));
             }
-            await Context.GetUsers<TUser>().DeleteOneAsync(u => u.Id == user.Id);
+            await Context.GetUsers<TUser>().DeleteOneAsync(u => u.Id == user.Id, cancellationToken);
             return IdentityResult.Success;
         }
 
         public virtual Task<TUser> FindByIdAsync(string userId, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Context.GetUsers<TUser>().Find(u => u.Id == userId).FirstOrDefaultAsync();
+            return Context.GetUsers<TUser>().Find(u => u.Id == userId).FirstOrDefaultAsync(cancellationToken);
         }
 
         public virtual Task<TUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             // todo exception on duplicates? or better to enforce unique index to ensure this
-            return Context.GetUsers<TUser>().Find(u => u.NormalizedUserName == normalizedUserName).FirstOrDefaultAsync();
+            return Context.GetUsers<TUser>().Find(u => u.NormalizedUserName == normalizedUserName).FirstOrDefaultAsync(cancellationToken);
         }
 
         public virtual Task SetPasswordHashAsync(TUser user, string passwordHash, CancellationToken cancellationToken = default(CancellationToken))
@@ -350,7 +344,7 @@ namespace AspNet.Identity.MongoDB
             cancellationToken.ThrowIfCancellationRequested();
             return Context.GetUsers<TUser>()
                 .Find(u => u.Logins.Any(l => l.LoginProvider == loginProvider && l.ProviderKey == providerKey))
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
         }
 
         public virtual Task<bool> GetEmailConfirmedAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
@@ -420,7 +414,7 @@ namespace AspNet.Identity.MongoDB
         {
             cancellationToken.ThrowIfCancellationRequested();
             // todo what if a user can have multiple accounts with the same email?
-            return Context.GetUsers<TUser>().Find(u => u.NormalizedEmail == normalizedEmail).FirstOrDefaultAsync();
+            return Context.GetUsers<TUser>().Find(u => u.NormalizedEmail == normalizedEmail).FirstOrDefaultAsync(cancellationToken);
         }
 
         public virtual Task<DateTimeOffset?> GetLockoutEndDateAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
@@ -589,24 +583,26 @@ namespace AspNet.Identity.MongoDB
             return Task.FromResult(user.TwoFactorEnabled);
         }
 
-        public Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var users = Context.GetUsers<TUser>()
+            var users = await Context.GetUsers<TUser>()
                 .Find(u => u.Claims.Any(c => c.Value == claim.Value && c.Type == claim.Type))
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
-            return Task.FromResult((IList<TUser>)users);
+            //TODO: Review cast
+            return users;
         }
 
-        public Task<IList<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<IList<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var users = Context.GetUsers<TUser>()
+            var users = await Context.GetUsers<TUser>()
                 .Find(u => u.Roles.Any(r => r == roleName))
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
-            return Task.FromResult((IList<TUser>)users);
+            //TODO: Review cast
+            return users;
 
         }
 
