@@ -9,7 +9,9 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
 		[Fact]
 		public async void Insert_NoId_SetsId()
 		{
-			var user = new IdentityUser();
+            
+
+            var user = new IdentityUser();
 			await Users.InsertOneAsync(user);
 
             Assert.NotNull(user.Id);

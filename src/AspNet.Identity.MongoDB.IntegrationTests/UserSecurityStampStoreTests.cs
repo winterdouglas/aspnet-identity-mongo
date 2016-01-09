@@ -1,35 +1,39 @@
-﻿namespace AspNet.Identity.MongoDB.IntegrationTests
-{
-	using System.Linq;
-	using AspNet.Identity.MongoDB;
-	using Microsoft.AspNet.Identity;
-	using Xunit;
+﻿using System.Linq;
+using AspNet.Identity.MongoDB;
+using Microsoft.AspNet.Identity;
+using Xunit;
+using MongoDB.Driver;
 
-	
+namespace AspNet.Identity.MongoDB.IntegrationTests
+{
 	public class UserSecurityStampStoreTests : UserIntegrationTestsBase
 	{
 		[Fact]
 		public async void Create_NewUser_HasSecurityStamp()
 		{
-			var manager = GetUserManager();
+            
+
+            var manager = GetUserManager();
 			var user = new IdentityUser {UserName = "bob"};
 
-			manager.Create(user);
+			await manager.CreateAsync(user);
 
-			var savedUser = Users.FindAll().Single();
-			Expect(savedUser.SecurityStamp, Is.Not.Null);
+			var savedUser = await Users.Find(u => true).SingleAsync();
+			Assert.NotNull(savedUser.SecurityStamp);
 		}
 
 		[Fact]
 		public async void GetSecurityStamp_NewUser_ReturnsStamp()
 		{
-			var manager = GetUserManager();
+            
+
+            var manager = GetUserManager();
 			var user = new IdentityUser {UserName = "bob"};
-			manager.Create(user);
+			await manager.CreateAsync(user);
 
-			var stamp = manager.GetSecurityStamp(user.Id);
+			var stamp = await manager.GetSecurityStampAsync(user);
 
-			Expect(stamp, Is.Not.Null);
+			Assert.NotNull(stamp);
 		}
 	}
 }

@@ -1,50 +1,52 @@
-﻿namespace AspNet.Identity.MongoDB.IntegrationTests
+﻿using System.Linq;
+using AspNet.Identity.MongoDB;
+using Microsoft.AspNet.Identity;
+using Xunit;
+using MongoDB.Driver;
+
+namespace AspNet.Identity.MongoDB.IntegrationTests
 {
-	using System.Linq;
-	using AspNet.Identity.MongoDB;
-	using Microsoft.AspNet.Identity;
-	using Xunit;
+    public class UserPasswordStoreTests : UserIntegrationTestsBase
+    {
+        [Fact]
+        public async void HasPassword_NoPassword_ReturnsFalse()
+        {
 
-	
-	public class UserPasswordStoreTests : UserIntegrationTestsBase
-	{
-		[Fact]
-		public async void HasPassword_NoPassword_ReturnsFalse()
-		{
-			var user = new IdentityUser {UserName = "bob"};
-			var manager = GetUserManager();
-			manager.Create(user);
 
-			var hasPassword = manager.HasPassword(user.Id);
+            var user = new IdentityUser { UserName = "bob" };
+            var manager = GetUserManager();
+            await manager.CreateAsync(user);
 
-			Expect(hasPassword, Is.False);
-		}
+            var hasPassword = await manager.HasPasswordAsync(user);
 
-		[Fact]
-		public async void AddPassword_NewPassword_CanFindUserByPassword()
-		{
-			var user = new IdentityUser {UserName = "bob"};
-			var manager = GetUserManager();
-			manager.Create(user);
+            Assert.False(hasPassword);
+        }
 
-			manager.AddPassword(user.Id, "testtest");
+        [Fact]
+        public async void AddPassword_NewPassword_CheckPasswordReturnsTrue()
+        {
+            var user = new IdentityUser { UserName = "bob" };
+            var manager = GetUserManager();
+            await manager.CreateAsync(user);
 
-			var findUserByPassword = manager.Find("bob", "testtest");
-			Expect(findUserByPassword, Is.Not.Null);
-		}
+            await manager.AddPasswordAsync(user, "Test123@");
 
-		[Fact]
-		public async void RemovePassword_UserWithPassword_SetsPasswordNull()
-		{
-			var user = new IdentityUser {UserName = "bob"};
-			var manager = GetUserManager();
-			manager.Create(user);
-			manager.AddPassword(user.Id, "testtest");
+            bool passwordResult = await manager.CheckPasswordAsync(user, "Test123@");
+            Assert.True(passwordResult);
+        }
 
-			manager.RemovePassword(user.Id);
+        [Fact]
+        public async void RemovePassword_UserWithPassword_SetsPasswordNull()
+        {
+            var user = new IdentityUser { UserName = "bob" };
+            var manager = GetUserManager();
+            await manager.CreateAsync(user);
+            await manager.AddPasswordAsync(user, "testtest");
 
-			var savedUser = Users.FindAll().Single();
-			Expect(savedUser.PasswordHash, Is.Null);
-		}
-	}
+            await manager.RemovePasswordAsync(user);
+
+            var savedUser = await Users.Find(u => true).SingleAsync();
+            Assert.Null(savedUser.PasswordHash);
+        }
+    }
 }

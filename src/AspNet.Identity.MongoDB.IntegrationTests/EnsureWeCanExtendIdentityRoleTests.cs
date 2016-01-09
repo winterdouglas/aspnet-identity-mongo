@@ -3,51 +3,90 @@ using AspNet.Identity.MongoDB;
 using Microsoft.AspNet.Identity;
 using Xunit;
 using MongoDB.Driver;
+using System;
+using System.Threading.Tasks;
 
 namespace AspNet.Identity.MongoDB.IntegrationTests
-{	
-	public class EnsureWeCanExtendIdentityRoleTests : UserIntegrationTestsBase
-	{
-		private RoleManager<ExtendedIdentityRole> _Manager;
-		private ExtendedIdentityRole _Role;
+{
 
-		public class ExtendedIdentityRole : IdentityRole
-		{
-			public string ExtendedField { get; set; }
-		}
+    public class ExtendedIdentityRole : IdentityRole
+    {
+        public string ExtendedField { get; set; }
+    }
 
-		[SetUp]
-		public void BeforeEachTestAfterBase()
-		{
-			var roles = Database.GetCollection<ExtendedIdentityRole>("roles");
-			var roleStore = new RoleStore<ExtendedIdentityRole>();
-			_Manager = new RoleManager<ExtendedIdentityRole>(roleStore);
-			_Role = new ExtendedIdentityRole
-			{
-				Name = "admin"
-			};
-		}
+    public class ExtendedRoleContext : IdentityContext<IdentityUser, ExtendedIdentityRole>
+    {
+        public ExtendedRoleContext()
+            : base(ConnectionSettings.ConnectionString, ConnectionSettings.DatabaseName + Guid.NewGuid())
+        {
+        }
 
-		[Fact]
-		public async void Create_ExtendedRoleType_SavesExtraFields()
-		{
-			_Role.ExtendedField = "extendedField";
+        public new IMongoDatabase Database => base.Database;
+        public new IMongoClient Client => base.Client;
+        public string DatabaseName => Database.DatabaseNamespace.DatabaseName;
+    }
 
-			await _Manager.CreateAsync(_Role);
+    public class EnsureWeCanExtendIdentityRoleTests : IDisposable
+    {
+        private readonly RoleManager<ExtendedIdentityRole> _manager;
+        private readonly ExtendedRoleContext _context;
 
-			var savedRole = await Roles.Find(_ => true).SingleAsync();
-			Expect(savedRole.ExtendedField, Is.EqualTo("extendedField"));
-		}
+        public EnsureWeCanExtendIdentityRoleTests()
+        {
+            _context = new ExtendedRoleContext();
+            _manager = GetRoleManager(_context);
 
-		[Fact]
-		public async void Create_ExtendedRoleType_ReadsExtraFields()
-		{
-			_Role.ExtendedField = "extendedField";
+            Task.Run(Clear).Wait();
+        }
 
-			_Manager.Create(_Role);
+        private async Task Clear()
+        {
+            await _context.Database.DropCollectionAsync(ConnectionSettings.UserCollectionName);
+            await _context.Database.DropCollectionAsync(ConnectionSettings.RoleCollectionName);
+        }
 
-			var savedRole = _Manager.FindById(_Role.Id);
-			Expect(savedRole.ExtendedField, Is.EqualTo("extendedField"));
-		}
-	}
+        protected RoleManager<ExtendedIdentityRole> GetRoleManager(ExtendedRoleContext context)
+        {
+            var store = new RoleStore<ExtendedIdentityRole>(context);
+            return new RoleManager<ExtendedIdentityRole>(store, new[] { new RoleValidator<ExtendedIdentityRole>() }, null, null, new TestLogger<RoleManager<ExtendedIdentityRole>>(), null);
+        }
+
+        [Fact]
+        public async void Create_ExtendedRoleType_SavesExtraFields()
+        {
+            var role = new ExtendedIdentityRole
+            {
+                Name = "admin",
+                ExtendedField = "extendedField"
+            };
+
+            await _manager.CreateAsync(role);
+
+            var savedRole = await _manager.FindByIdAsync(role.Id);
+            Assert.Equal("extendedField", savedRole.ExtendedField);
+        }
+
+        [Fact]
+        public async void Create_ExtendedRoleType_ReadsExtraFields()
+        {
+            var role = new ExtendedIdentityRole
+            {
+                Name = "admin",
+                ExtendedField = "extendedField"
+            };
+
+            await _manager.CreateAsync(role);
+
+            var savedRole = await _manager.FindByIdAsync(role.Id);
+            Assert.Equal("extendedField", savedRole.ExtendedField);
+        }
+
+        public async void Dispose()
+        {
+            if (_context != null)
+            {
+                await _context.Client.DropDatabaseAsync(_context.DatabaseName);
+            }
+        }
+    }
 }

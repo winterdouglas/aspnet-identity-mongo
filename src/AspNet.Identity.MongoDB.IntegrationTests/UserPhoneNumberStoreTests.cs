@@ -12,40 +12,46 @@
 		[Fact]
 		public async void SetPhoneNumber_StoresPhoneNumber()
 		{
-			var user = new IdentityUser {UserName = "bob"};
+            
+
+            var user = new IdentityUser {UserName = "bob"};
 			var manager = GetUserManager();
-			manager.Create(user);
+			await manager.CreateAsync(user);
 
-			manager.SetPhoneNumber(user.Id, PhoneNumber);
+			await manager.SetPhoneNumberAsync(user, PhoneNumber);
 
-			Expect(manager.GetPhoneNumber(user.Id), Is.EqualTo(PhoneNumber));
+			Assert.Equal(PhoneNumber, await manager.GetPhoneNumberAsync(user));
 		}
 
 		[Fact]
 		public async void ConfirmPhoneNumber_StoresPhoneNumberConfirmed()
 		{
-			var user = new IdentityUser {UserName = "bob"};
+            
+
+            var user = new IdentityUser {UserName = "bob"};
 			var manager = GetUserManager();
-			manager.Create(user);
-			var token = manager.GenerateChangePhoneNumberToken(user.Id, PhoneNumber);
+			await manager.CreateAsync(user);
+			var token = await manager.GenerateChangePhoneNumberTokenAsync(user, PhoneNumber);
 
-			manager.ChangePhoneNumber(user.Id, PhoneNumber, token);
+			await manager.ChangePhoneNumberAsync(user, PhoneNumber, token);
 
-			Expect(manager.IsPhoneNumberConfirmed(user.Id));
+			Assert.True(await manager.IsPhoneNumberConfirmedAsync(user));
 		}
 
 		[Fact]
 		public async void ChangePhoneNumber_OriginalPhoneNumberWasConfirmed_NotPhoneNumberConfirmed()
 		{
-			var user = new IdentityUser {UserName = "bob"};
+            
+
+            var user = new IdentityUser {UserName = "bob"};
 			var manager = GetUserManager();
-			manager.Create(user);
-			var token = manager.GenerateChangePhoneNumberToken(user.Id, PhoneNumber);
-			manager.ChangePhoneNumber(user.Id, PhoneNumber, token);
+			await manager.CreateAsync(user);
+			var token = await manager.GenerateChangePhoneNumberTokenAsync(user, PhoneNumber);
+			await manager.ChangePhoneNumberAsync(user, PhoneNumber, token);
 
-			manager.SetPhoneNumber(user.Id, PhoneNumber);
+			await manager.SetPhoneNumberAsync(user, PhoneNumber);
 
-			Expect(manager.IsPhoneNumberConfirmed(user.Id), Is.False);
+			Assert.False(await manager.IsPhoneNumberConfirmedAsync(user));
 		}
 	}
 }

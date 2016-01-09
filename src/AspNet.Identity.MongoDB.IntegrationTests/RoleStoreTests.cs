@@ -12,7 +12,9 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
 		[Fact]
 		public async void Create_NewRole_Saves()
 		{
-			var roleName = "admin";
+		    
+
+            var roleName = "admin";
 			var role = new IdentityRole(roleName);
 			var manager = GetRoleManager();
 
@@ -25,7 +27,9 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
 		[Fact]
 		public async void FindByName_SavedRole_ReturnsRole()
 		{
-			var roleName = "name";
+            
+
+            var roleName = "name";
 			var role = new IdentityRole {Name = roleName};
 			var manager = GetRoleManager();
 			await manager.CreateAsync(role);
@@ -39,7 +43,9 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
 		[Fact]
 		public async void FindById_SavedRole_ReturnsRole()
 		{
-			var role = new IdentityRole {Name = "name"};
+            
+
+            var role = new IdentityRole {Name = "name"};
 			var manager = GetRoleManager();
 			await manager.CreateAsync(role);
 
@@ -54,7 +60,9 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
 		[Fact]
 		public async void Delete_ExistingRole_Removes()
 		{
-			var role = new IdentityRole {Name = "name"};
+            
+
+            var role = new IdentityRole {Name = "name"};
 			var manager = GetRoleManager();
 			await manager.CreateAsync(role);
 			Assert.NotEmpty(await Roles.Find(_ => true).ToListAsync());
@@ -67,7 +75,9 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
 		[Fact]
 		public async void Update_ExistingRole_Updates()
 		{
-			var role = new IdentityRole {Name = "name"};
+            
+
+            var role = new IdentityRole {Name = "name"};
 			var manager = GetRoleManager();
 			await manager.CreateAsync(role);
 			var savedRole = await manager.FindByIdAsync(role.Id);
@@ -75,7 +85,7 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
 
 			await manager.UpdateAsync(savedRole);
 
-			var changedRole = await Roles.Find(_ => true).SingleAsync());
+			var changedRole = await Roles.Find(_ => true).SingleAsync();
             Assert.NotNull(changedRole);
             Assert.Equal("newname", changedRole.Name);
 		}

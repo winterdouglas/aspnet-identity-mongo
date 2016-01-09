@@ -1,12 +1,15 @@
 ﻿using AspNet.Identity.MongoDB;
 using Microsoft.AspNet.Identity;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.OptionsModel;
 using MongoDB.Driver;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace AspNet.Identity.MongoDB.IntegrationTests
 {
-    public static class ConnectionSettings
+    internal static class ConnectionSettings
     {
         public static string ConnectionString = "mongodb://localhost:27017";
         public static string DatabaseName = "identity-testing";
@@ -17,60 +20,65 @@ namespace AspNet.Identity.MongoDB.IntegrationTests
     public class UserTestContext : IdentityContext
     {
         public UserTestContext()
-            : base(ConnectionSettings.ConnectionString,
-                  ConnectionSettings.DatabaseName)
+            : base(ConnectionSettings.ConnectionString, ConnectionSettings.DatabaseName + Guid.NewGuid())
         {
         }
 
-        public new IMongoDatabase Database { get { return base.Database; } }
+        public new IMongoDatabase Database => base.Database;
+        public new IMongoClient Client => base.Client;
+        public string DatabaseName => Database.DatabaseNamespace.DatabaseName;
     }
 
-    public class UserIntegrationTestsBase
+    public class UserIntegrationTestsBase : IDisposable
     {
-        const string connectionString = "mongodb://localhost:27017";
-        const string databaseName = "identity-testing";
-        const string userCollectionName = "users";
-        const string roleCollectionName = "roles";
-
         protected UserTestContext Context;
         protected IMongoDatabase Database;
         protected IMongoCollection<IdentityUser> Users;
         protected IMongoCollection<IdentityRole> Roles;
 
-
         public UserIntegrationTestsBase()
         {
-            Task.Run(() => InitializeAsync()).Wait();
+            Task.Run(Initialize).Wait();
         }
 
-        public async void InitializeAsync()
+        public async Task Initialize()
         {
             Context = new UserTestContext();
-
             Database = Context.Database;
             Users = Context.Users;
             Roles = Context.Roles;
 
-            await Context.Database.DropCollectionAsync(userCollectionName);
-            await Context.Database.DropCollectionAsync(roleCollectionName);
+            await Context.Database.DropCollectionAsync(ConnectionSettings.UserCollectionName);
+            await Context.Database.DropCollectionAsync(ConnectionSettings.RoleCollectionName);
         }
 
-        protected UserManager<IdentityUser> GetUserManager()
+        protected UserManager<IdentityUser> GetUserManager(IOptions<IdentityOptions> options = null)
         {
             var store = new UserStore<IdentityUser>(Context);
-            return new UserManager<IdentityUser>(store, null, null, null, null, null, null, null, null, null);
+            return new UserManager<IdentityUser>(store,
+                options ?? new IdentityOptionsAcessor(),
+                new PasswordHasher<IdentityUser>(),
+                new[] { new UserValidator<IdentityUser>() },
+                new[] { new PasswordValidator<IdentityUser>() },
+                new UpperInvariantLookupNormalizer(),
+                new IdentityErrorDescriber(),
+                null,
+                new TestLogger<UserManager<IdentityUser>>(),
+                null);
         }
 
         protected RoleManager<IdentityRole> GetRoleManager()
         {
             var store = new RoleStore<IdentityRole>(Context);
-            return new RoleManager<IdentityRole>(store, null, null, null, null, null);
+            return new RoleManager<IdentityRole>(store, new[] { new RoleValidator<IdentityRole>() }, null, null, new TestLogger<RoleManager<IdentityRole>>(), null);
         }
 
-        protected UserManager<TUser> GetUserManager<TUser>() where TUser : IdentityUser
+        public async void Dispose()
         {
-            var store = new UserStore<TUser>(Context);
-            return new UserManager<IdentityUser>(store, null, null, null, null, null, null, null, null, null);
+            if (Context != null)
+            {
+                await Context.Client.DropDatabaseAsync(Context.DatabaseName);
+            }
         }
     }
 }

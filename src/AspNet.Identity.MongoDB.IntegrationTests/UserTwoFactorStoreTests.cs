@@ -1,35 +1,39 @@
 ﻿namespace AspNet.Identity.MongoDB.IntegrationTests
 {
-	using AspNet.Identity.MongoDB;
-	using Microsoft.AspNet.Identity;
-	using Xunit;
+    using AspNet.Identity.MongoDB;
+    using Microsoft.AspNet.Identity;
+    using Xunit;
 
-	
-	public class UserTwoFactorStoreTests : UserIntegrationTestsBase
-	{
-		[Fact]
-		public async void SetTwoFactorEnabled()
-		{
-			var user = new IdentityUser {UserName = "bob"};
-			var manager = GetUserManager();
-			manager.Create(user);
 
-			manager.SetTwoFactorEnabled(user.Id, true);
+    public class UserTwoFactorStoreTests : UserIntegrationTestsBase
+    {
+        [Fact]
+        public async void SetTwoFactorEnabled()
+        {
+            
 
-			Expect(manager.GetTwoFactorEnabled(user.Id));
-		}
+            var user = new IdentityUser { UserName = "bob" };
+            var manager = GetUserManager();
+            await manager.CreateAsync(user);
 
-		[Fact]
-		public async void ClearTwoFactorEnabled_PreviouslyEnabled_NotEnabled()
-		{
-			var user = new IdentityUser {UserName = "bob"};
-			var manager = GetUserManager();
-			manager.Create(user);
-			manager.SetTwoFactorEnabled(user.Id, true);
+            await manager.SetTwoFactorEnabledAsync(user, true);
 
-			manager.SetTwoFactorEnabled(user.Id, false);
+            Assert.True(await manager.GetTwoFactorEnabledAsync(user));
+        }
 
-			Expect(manager.GetTwoFactorEnabled(user.Id), Is.False);
-		}
-	}
+        [Fact]
+        public async void ClearTwoFactorEnabled_PreviouslyEnabled_NotEnabled()
+        {
+            
+
+            var user = new IdentityUser { UserName = "bob" };
+            var manager = GetUserManager();
+            await manager.CreateAsync(user);
+            await manager.SetTwoFactorEnabledAsync(user, true);
+
+            await manager.SetTwoFactorEnabledAsync(user, false);
+
+            Assert.False(await manager.GetTwoFactorEnabledAsync(user));
+        }
+    }
 }

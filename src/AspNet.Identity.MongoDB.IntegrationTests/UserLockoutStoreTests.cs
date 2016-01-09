@@ -1,91 +1,99 @@
-﻿namespace AspNet.Identity.MongoDB.IntegrationTests
+﻿using System;
+using AspNet.Identity.MongoDB;
+using Microsoft.AspNet.Identity;
+using Xunit;
+using MongoDB.Driver;
+
+namespace AspNet.Identity.MongoDB.IntegrationTests
 {
-	using System;
-	using AspNet.Identity.MongoDB;
-	using Microsoft.AspNet.Identity;
-	using Xunit;
+    public class UserLockoutStoreTests : UserIntegrationTestsBase
+    {
+        [Fact]
+        public async void AccessFailed_IncrementsAccessFailedCount()
+        {
+            var options = new IdentityOptionsAcessor();
+            options.Value.Lockout.MaxFailedAccessAttempts = 3;
 
-	
-	public class UserLockoutStoreTests : UserIntegrationTestsBase
-	{
-		[Fact]
-		public async void AccessFailed_IncrementsAccessFailedCount()
-		{
-			var manager = GetUserManager();
-			var user = new IdentityUser {UserName = "bob"};
-			manager.Create(user);
-			manager.MaxFailedAccessAttemptsBeforeLockout = 3;
+            var manager = GetUserManager(options);
+            var user = new IdentityUser { UserName = "bob" };
+            await manager.CreateAsync(user);
 
-			manager.AccessFailed(user.Id);
+            await manager.AccessFailedAsync(user);
 
-			Expect(manager.GetAccessFailedCount(user.Id), Is.EqualTo(1));
-		}
+            Assert.Equal(1, await manager.GetAccessFailedCountAsync(user));
+        }
 
-		[Fact]
-		public async void IncrementAccessFailedCount_ReturnsNewCount()
-		{
-			var store = new UserStore<IdentityUser>(null);
-			var user = new IdentityUser {UserName = "bob"};
+        [Fact]
+        public async void IncrementAccessFailedCount_ReturnsNewCount()
+        {
+            var store = new UserStore<IdentityUser>(Context);
+            var user = new IdentityUser { UserName = "bob" };
 
-			var count = store.IncrementAccessFailedCountAsync(user);
+            var count = await store.IncrementAccessFailedCountAsync(user);
 
-			Expect(count.Result, Is.EqualTo(1));
-		}
+            Assert.Equal(1, count);
+        }
 
-		[Fact]
-		public async void ResetAccessFailed_AfterAnAccessFailed_SetsToZero()
-		{
-			var manager = GetUserManager();
-			var user = new IdentityUser {UserName = "bob"};
-			manager.Create(user);
-			manager.MaxFailedAccessAttemptsBeforeLockout = 3;
-			manager.AccessFailed(user.Id);
+        [Fact]
+        public async void ResetAccessFailed_AfterAnAccessFailed_SetsToZero()
+        {
+            var options = new IdentityOptionsAcessor();
+            options.Value.Lockout.MaxFailedAccessAttempts = 3;
 
-			manager.ResetAccessFailedCount(user.Id);
+            var manager = GetUserManager(options);
+            var user = new IdentityUser { UserName = "bob" };
+            await manager.CreateAsync(user);
 
-			Expect(manager.GetAccessFailedCount(user.Id), Is.EqualTo(0));
-		}
+            await manager.AccessFailedAsync(user);
 
-		[Fact]
-		public async void AccessFailed_NotOverMaxFailures_NoLockoutEndDate()
-		{
-			var manager = GetUserManager();
-			var user = new IdentityUser {UserName = "bob"};
-			manager.Create(user);
-			manager.MaxFailedAccessAttemptsBeforeLockout = 3;
+            await manager.ResetAccessFailedCountAsync(user);
 
-			manager.AccessFailed(user.Id);
+            Assert.Equal(0, await manager.GetAccessFailedCountAsync(user));
+        }
 
-			Expect(manager.GetLockoutEndDate(user.Id), Is.EqualTo(DateTimeOffset.MinValue));
-		}
+        [Fact]
+        public async void AccessFailed_NotOverMaxFailures_NoLockoutEndDate()
+        {
+            var options = new IdentityOptionsAcessor();
+            options.Value.Lockout.MaxFailedAccessAttempts = 3;
 
-		[Fact]
-		public async void AccessFailed_ExceedsMaxFailedAccessAttempts_LocksAccount()
-		{
-			var manager = GetUserManager();
-			var user = new IdentityUser {UserName = "bob"};
-			manager.Create(user);
-			manager.MaxFailedAccessAttemptsBeforeLockout = 0;
-			manager.DefaultAccountLockoutTimeSpan = TimeSpan.FromHours(1);
+            var manager = GetUserManager(options);
+            var user = new IdentityUser { UserName = "bob" };
+            await manager.CreateAsync(user);
+            await manager.AccessFailedAsync(user);
 
-			manager.AccessFailed(user.Id);
+            Assert.Null(await manager.GetLockoutEndDateAsync(user));
+        }
 
-			var lockoutEndDate = manager.GetLockoutEndDate(user.Id);
-			Expect(lockoutEndDate.Subtract(DateTime.UtcNow).TotalHours, Is.GreaterThan(0.9).And.LessThan(1.1));
-		}
+        [Fact]
+        public async void AccessFailed_ExceedsMaxFailedAccessAttempts_LocksAccount()
+        {
+            var options = new IdentityOptionsAcessor();
+            options.Value.Lockout.MaxFailedAccessAttempts = 0;
+            options.Value.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromHours(1);
 
-		[Fact]
-		public async void SetLockoutEnabled()
-		{
-			var manager = GetUserManager();
-			var user = new IdentityUser {UserName = "bob"};
-			manager.Create(user);
+            var manager = GetUserManager(options);
+            var user = new IdentityUser { UserName = "bob" };
+            await manager.CreateAsync(user);
 
-			manager.SetLockoutEnabled(user.Id, true);
-			Expect(manager.GetLockoutEnabled(user.Id));
+            await manager.AccessFailedAsync(user);
 
-			manager.SetLockoutEnabled(user.Id, false);
-			Expect(manager.GetLockoutEnabled(user.Id), Is.False);
-		}
-	}
+            var lockoutEndDate = await manager.GetLockoutEndDateAsync(user);
+            Assert.InRange(lockoutEndDate.Value.Subtract(DateTime.UtcNow).TotalHours, 0.9, 1.1);
+        }
+
+        [Fact]
+        public async void SetLockoutEnabled()
+        {
+            var manager = GetUserManager();
+            var user = new IdentityUser { UserName = "bob" };
+            await manager.CreateAsync(user);
+
+            await manager.SetLockoutEnabledAsync(user, true);
+            Assert.True(await manager.GetLockoutEnabledAsync(user));
+
+            await manager.SetLockoutEnabledAsync(user, false);
+            Assert.False(await manager.GetLockoutEnabledAsync(user));
+        }
+    }
 }
